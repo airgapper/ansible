@@ -5,6 +5,10 @@
   become: true
   gather_facts: no
 
+  vars:
+    vars_files:
+      - config.yml
+
   pre_tasks:
     - raw: apt-get install -y python-simplejson
 
@@ -15,6 +19,10 @@
     - name: Install nginx
       apt: name=nginx state=latest
 
+    - name: Install PHP Packages
+      apt: name={{ item  }} update_cache=yes state=latest
+      loop: [ 'python3-pymysql', 'php7.3-fpm'  ]
+
     - name: install letsencrypt
       apt: name=letsencrypt state=latest
 
@@ -24,6 +32,7 @@
     - name: Remove default nginx config
       file: name=/etc/nginx/sites-enabled/default state=absent
 
+# Nginx Config
     - name: Install system nginx config
       template:
         src: templates/nginx.conf.j2
@@ -32,31 +41,58 @@
     - name: Install nginx site for letsencrypt requests
       template:
         src: templates/nginx-http.j2
-        dest: /etc/nginx/sites-enabled/http
+        dest: /etc/nginx/sites-available/http-{{ domain_name }}
 
     - name: Reload nginx to activate letsencrypt site
       service: name=nginx state=restarted
 
-    - name: Create letsencrypt certificate
-      shell: letsencrypt certonly -n --webroot -w /var/www/letsencrypt -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }}
-      args:
-        creates: /etc/letsencrypt/live/{{ domain_name }}
+# Make Domain Directory
+    - name: Create Domain Director
+      file:
+        path: /var/www/{{ domain_name }}
+        owner: www-data
+        group: www-data
+        mode: 0775
+        state: directory
 
-    - name: Generate dhparams
-      shell: openssl dhparam -out /etc/nginx/dhparams.pem 2048
-      args:
-        creates: /etc/nginx/dhparams.pem
+
+#    - name: Create letsencrypt certificate
+#      shell: letsencrypt certonly -n --webroot -w /var/www/letsencrypt -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }}
+#      args:
+#        creates: /etc/letsencrypt/live/{{ domain_name }}
+#
+#    - name: Generate dhparams
+#      shell: openssl dhparam -out /etc/nginx/dhparams.pem 2048
+#      args:
+#        creates: /etc/nginx/dhparams.pem
+
 
     - name: Install nginx site for specified site
       template:
         src: templates/nginx-le.j2
-        dest: /etc/nginx/sites-enabled/le
+        dest: /etc/nginx/sites-enabled/{{ domain_name }}
+
 
     - name: Reload nginx to activate specified site
       service: name=nginx state=restarted
+
 
     - name: Add letsencrypt cronjob for cert renewal
       cron:
         name: letsencrypt_renewal
         special_time: weekly
         job: letsencrypt --renew certonly -n --webroot -w /var/www/letsencrypt -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }} && service nginx reload
+
+
+# Setup PHP info page
+
+    - name: Setup PHP info Page
+      template:
+        src: "files/info.php.j2"
+        dest: "/var/www/{{ domain_name }}/info.php"
+
+
+    - name: Restart PHP
+      service: 
+        name: php7.3-fpm 
+        state: restarted
