@@ -1,0 +1,14 @@
+
+
+CREATE PASSWORD:
+
+	 mkpassed --method=SHA-512
+
+It will ask for a password
+
+Whois package has this program if above fail 
+ ``` apt install whois ```
+
+
+
+
