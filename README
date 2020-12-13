@@ -1,4 +1,7 @@
 
+# USING NGINX, LETSENCRYPT
+
+## REQUIRMENTS
 
 CREATE PASSWORD:
 
@@ -6,6 +9,8 @@ CREATE PASSWORD:
 
 It will ask for a password
 
+
+## PACKAGES
 Whois package has this program if above fail 
  ``` apt install whois ```
 
