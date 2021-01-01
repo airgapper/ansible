@@ -4,6 +4,6 @@ config.yml
 hosts_deploy.yml
 ssh-setup.js
 hosts
-/host_vars/*
-/users_vars/*
-/vault/*
+host_vars/*
+users_vars/*
+vault/*
