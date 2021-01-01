@@ -3,5 +3,5 @@ secring.*
 config.yml
 ssh-setup.js
 host_vars/
-users_vars/
+user_vars/
 vault/
