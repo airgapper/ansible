@@ -1,8 +1,9 @@
 ---
-- hosts: paylessbanners
-#  become_user: stader
-#  become_method: sudo
-  become: true
+- hosts: all
+  become_user: stader
+  become_method: sudo
+
+ # become: true
   gather_facts: no
 
   vars:

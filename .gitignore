@@ -1,7 +1,8 @@
 secring.*
 *.retry
-deploy_key.yml
 file
 hosts
+hosts.yml
 users.yml
 config.yml
+passwords.yml

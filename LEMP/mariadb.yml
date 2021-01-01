@@ -1,0 +1,58 @@
+---
+- hosts: all
+  gather_facts: true
+
+
+  #vars:
+  vars_files:
+    - defaults/mariaDBdefaults.yml
+
+  tasks:
+    - name: Install MariaDB_  mariadb-server and python-mysqldb packages
+      apt:
+        name:
+          - mariadb-server
+          - mariadb-client
+          - mariadb-common
+          - python-mysqldb
+          - python3-mysqldb
+        state: latest
+
+    - name: Copy config file
+      template:
+        src: templates/mariaDB_my.cnf.j2
+        dest: /etc/mysql/my.cnf
+        
+    - name: Reload MariaDB
+      service: name=mariadb state=restarted
+
+
+    - name: mysql_root_password
+      mysql_user:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        user: root
+        check_implicit_admin: true
+        password: "{{ mysql_root_password }}"
+        host: localhost
+
+
+    - name: Reload MariaDB
+      service: name=mariadb state=restarted
+
+
+
+
+#- name: Ensure configured databases exist
+#  community.mysql.mysql_db:
+#    name: "{{ item }}"
+#  with_items: "{{ mariadb_ensure_databases }}"
+
+#- name: Ensure configured users exist
+#  mysql_user:
+#    name: "{{ item.key }}"
+#    password: "{{ item.value['password'] | default(omit) }}"
+#    priv: "{{ item.value['privileges'] | default(omit) }}"
+#    host: "{{ item.value['host'] | default(omit) }}"
+#  no_log: True
+#  loop: "{{ mariadb_ensure_users |dict2items }}"

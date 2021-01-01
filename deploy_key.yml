@@ -1,0 +1,178 @@
+
+---
+  - hosts: all
+    become: true
+    become_method: su 
+    vars: 
+      sshd_use_pam: yes
+      sshd_challenge_response_authentication: yes
+      sshd_password_authentication: yes
+      sshd_permitroot_login: yes
+    vars_files:
+      - users.yml
+    tasks:
+
+
+    - name: Update all packages to their latest version
+      apt:
+        name: "*"
+        force_apt_get: True
+        state: latest
+
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+
+
+    - name: Remove useless packages from the cache
+      apt:
+        autoclean: yes
+
+    - name: Remove dependencies that are no longer required
+      apt:
+        autoremove: yes
+
+    - name: Verify SUDO group present
+      group: 
+        name: sudo 
+        state: present
+
+
+    - name: Add sudo
+      apt:
+        name: sudo
+        state: present
+
+
+    - name: Update
+      apt:
+        name: 
+        state: present
+
+
+
+    - name: Adding User "{{ item.name }}"
+      user:
+        name: "{{ item.name }}"
+        create_home: yes
+        comment: "Access_User {{ item.name }}"
+        password: "{{ item.passwd }}"
+        update_password: on_create
+        groups: "Access_Users,www-data,sudo"
+        append: yes
+      with_items: "{{ users }}"
+
+
+    - name: Create the SSH  direcotry
+      file:
+        path: "/home/{{ item.name }}/.ssh"
+        owner: "{{ item.name }}"
+        state: directory
+      with_items: "{{ users }}"
+
+
+    - name: create empty SSH Authorized Keys file
+      file:
+        path: "/home/{{ item.name }}/.ssh/authorized_keys"
+        state: touch
+        owner: "{{ item.name  }}"
+      with_items: "{{ users }}"
+
+
+    - name: Put pubkey into SSH key dir
+      authorized_key:
+        user: "{{ item.name }}"
+        key: "{{ item.key }}"
+        state: present
+      with_items: "{{ users }}"
+
+
+    - name: Verify includes sudoers.d
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        line: '#includedir /etc/sudoers.d'
+
+    - name: Enter NOPASSWD in sudoers
+      lineinfile:
+#        path: /etc/sudoers
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+#        become: true
+
+
+    - name: Add sshpass
+      apt:
+        name: sshpass
+        state: present
+
+
+    - name: Adding group Access_Users
+      group:
+        name: Access_Users
+        state: present
+
+#    - name: Add Access_Users to sudoers
+#      copy:
+#        content: "%Access_Users ALL=(ALL:ALL) NOPASSWD:ALL"
+#        dest: /etc/sudoers.d/Access_Users
+#        mode: 0440
+#        validate: 'visudo -cf %s'
+ 
+
+
+
+
+
+#    - name: create key directory with ROOT access
+#      action: file path=/etc/ssh/authorized_keys state=directory
+#        owner=0 group=0 mode=0755
+
+#    - name: upload user key
+#      action: 
+#        copy src=~/ansible/authorized_keys/{{ item }}
+#        dest=/etc/ssh/authorized_keys/
+#        owner=0 group=0 mode=644
+#      with_items: {{ users  }}
+
+####
+
+
+
+
+    - name: Remove User Account
+      user: 
+        name: "{{ item.name }}"
+        state: absent
+        remove: yes
+        force: yes
+      with_items: "{{ users_to_remove }}"
+
+
+     # configure ssh server
+    - name: Configure sshd server
+      template:
+        src: templates/ssh-setup.j2
+        dest: /etc/ssh/sshd_config
+        owner: root
+        mode: '0600'
+        validate: /usr/sbin/sshd -t -f %s
+        backup: yes
+       # restart sshd
+
+    - name: Setup alternate SSHd port
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^#Port'
+        line: 'Port 25714'
+        state: present
+
+
+    - name: Restart SSHD
+      service:
+         name: sshd
+         state: restarted
+
