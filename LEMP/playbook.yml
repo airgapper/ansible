@@ -1,10 +1,13 @@
 ---
 - hosts: all
-  become_user: stader
-  become_method: sudo
+#  become_user: stader
+#  become_method: sudo
+
+  become: true
+  become_method: su
 
  # become: true
-  gather_facts: no
+  gather_facts: yes
 
   vars:
     vars_files:
@@ -12,6 +15,8 @@
 
   pre_tasks:
     - raw: apt-get install -y python-simplejson
+
+
 
   tasks:
     - name: Upgrade system
@@ -24,14 +29,24 @@
       apt: name={{ item  }} update_cache=yes state=latest
       loop: [ 'python3-pymysql', 'php7.3-fpm'  ]
 
-    - name: install letsencrypt
-      apt: name=letsencrypt state=latest
 
-    - name: create letsencrypt directory
+
+    - name: Install Letsencrypt
+      apt: 
+        name: letsencrypt 
+        state: latest
+
+    - name: Create Letsencrypt directory
       file: name=/var/www/letsencrypt state=directory
+
+
+    - name: Create Letsencrypt Live directory
+      file: name=/etc/letsencrypt/live/ state=directory
+
 
     - name: Remove default nginx config
       file: name=/etc/nginx/sites-enabled/default state=absent
+
 
 # Nginx Config
     - name: Install system nginx config
@@ -39,13 +54,19 @@
         src: templates/nginx.conf.j2
         dest: /etc/nginx/nginx.conf
 
+
     - name: Install nginx site for letsencrypt requests
       template:
         src: templates/nginx-http.j2
-        dest: /etc/nginx/sites-available/http-{{ domain_name }}
+        dest: /etc/nginx/sites-enabled/http-{{ domain_name }}
 
     - name: Reload nginx to activate letsencrypt site
-      service: name=nginx state=restarted
+      service: 
+        name: nginx 
+        state: restarted
+
+
+
 
 # Make Domain Directory
     - name: Create Domain Director
@@ -57,21 +78,24 @@
         state: directory
 
 
-#    - name: Create letsencrypt certificate
-#      shell: letsencrypt certonly -n --webroot -w /var/www/letsencrypt -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }}
-#      args:
-#        creates: /etc/letsencrypt/live/{{ domain_name }}
-#
-#    - name: Generate dhparams
-#      shell: openssl dhparam -out /etc/nginx/dhparams.pem 2048
-#      args:
-#        creates: /etc/nginx/dhparams.pem
+
+# Create Letsencrypt Cert
+    - name: Create letsencrypt certificate
+      shell: letsencrypt certonly -n --webroot -w /var/www/letsencrypt -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }}
+      args:
+        creates: /etc/letsencrypt/live/{{ domain_name }}
+
+
+    - name: Generate dhparams
+      shell: openssl dhparam -out /etc/nginx/dhparams.pem 2048
+      args:
+        creates: /etc/nginx/dhparams.pem
 
 
     - name: Install nginx site for specified site
       template:
         src: templates/nginx-le.j2
-        dest: /etc/nginx/sites-enabled/{{ domain_name }}
+        dest: /etc/nginx/sites-enabled/le-{{ domain_name }}
 
 
     - name: Reload nginx to activate specified site

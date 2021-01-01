@@ -43,3 +43,5 @@ password: redhat
 cloud_init_username: root
 cloud_init_password: redhat
 ```
+
+

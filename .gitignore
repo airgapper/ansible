@@ -1,8 +1,9 @@
 secring.*
 *.retry
-file
-hosts
-hosts.yml
 users.yml
 config.yml
 passwords.yml
+hosts_deploy.yml
+ssh-setup.j2
+LEMP/hosts
+LEMP/hosts_websites.yml
