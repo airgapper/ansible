@@ -4,6 +4,6 @@ users.yml
 config.yml
 passwords.yml
 hosts_deploy.yml
-ssh-setup.j2
+ssh-setup.js
 LEMP/hosts
-LEMP/hosts_websites.yml
+LEMP/host_vars/*
