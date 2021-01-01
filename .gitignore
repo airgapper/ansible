@@ -1,9 +1,9 @@
 secring.*
 *.retry
-users.yml
 config.yml
-passwords.yml
 hosts_deploy.yml
 ssh-setup.js
-LEMP/hosts
-LEMP/host_vars/*
+hosts
+/host_vars/*
+/users_vars/*
+/vault/*

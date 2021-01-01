@@ -9,7 +9,7 @@
       sshd_password_authentication: yes
       sshd_permitroot_login: yes
     vars_files:
-      - users.yml
+      - users_var/users.yml
     tasks:
 
 
