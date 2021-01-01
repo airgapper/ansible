@@ -1,7 +1,6 @@
 secring.*
 *.retry
 config.yml
-ssh-setup.js
 host_vars/
 user_vars/
 vault/
